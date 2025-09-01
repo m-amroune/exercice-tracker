@@ -82,14 +82,27 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-app.get('/api/users', async (req, res) => {
+app.get('/api/users/:_id/logs', async (req, res) => {
   try {
-    const users = await User.find({}, 'username _id');
-    res.json(users);
+    const user = await User.findById(req.params._id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const exercises = await Exercise.find({ userId: user._id });
+
+    res.json({
+      username: user.username,
+      _id: user._id,
+      log: exercises
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+
+
 
 
 const listener = app.listen(process.env.PORT || 3000, () => {
