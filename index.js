@@ -61,6 +61,7 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
 });
 
 
+
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html');
 });
@@ -82,24 +83,67 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
+
+app.get('/api/users', async (req, res) => {
+  try {
+
+    const users = await User.find({}, 'username _id');
+    res.json(users); 
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 app.get('/api/users/:_id/logs', async (req, res) => {
   try {
+    const { from, to, limit } = req.query;
+
     const user = await User.findById(req.params._id);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const exercises = await Exercise.find({ userId: user._id });
+   
+    let exercises = await Exercise.find({ userId: user._id });
+
+  
+    if (from) {
+      const fromDate = new Date(from);
+      exercises = exercises.filter(e => e.date >= fromDate);
+    }
+    if (to) {
+      const toDate = new Date(to);
+      exercises = exercises.filter(e => e.date <= toDate);
+    }
+
+   
+    if (limit) {
+      exercises = exercises.slice(0, parseInt(limit));
+    }
+
+ 
+    const log = exercises.map(e => ({
+      description: e.description,
+      duration: e.duration,
+      date: e.date.toDateString()
+    }));
 
     res.json({
       username: user.username,
+      count: log.length,
       _id: user._id,
-      log: exercises
+      log
     });
+
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+
+
+
 
 
 
