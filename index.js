@@ -22,6 +22,45 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
+const exerciseSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  description: { type: String, required: true },
+  duration: { type: Number, required: true },
+  date: { type: Date, required: true }
+});
+
+const Exercise = mongoose.model('Exercise', exerciseSchema);
+
+
+app.post('/api/users/:_id/exercises', async (req, res) => {
+  const { description, duration, date } = req.body;
+
+  try {
+    const user = await User.findById(req.params._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const exercise = new Exercise({
+      userId: user._id,
+      description,
+      duration: parseInt(duration),
+      date: date ? new Date(date) : new Date()
+    });
+
+    await exercise.save();
+
+    res.json({
+      username: user.username,
+      description: exercise.description,
+      duration: exercise.duration,
+      date: exercise.date.toDateString(),
+      _id: user._id
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html');
 });
